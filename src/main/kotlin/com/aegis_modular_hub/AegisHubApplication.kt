@@ -7,6 +7,16 @@ import org.springframework.boot.runApplication
 class AegisHubApplication
 
 fun main(args: Array<String>) {
-    runApplication<AegisHubApplication>(*args)
-    println("✅ ¡Aplicación iniciada correctamente!")
+    val context = runApplication<AegisHubApplication>(*args)
+
+    val port = context.environment.getProperty("server.port") ?: "8080"
+    val host = "http://localhost"
+
+    println("""
+        ----------------------------------------------------------
+        ✅ ¡Aegis Hub se ha iniciado correctamente!
+        
+        📌 Swagger UI:   $host:$port/swagger-ui.html
+        ----------------------------------------------------------
+    """.trimIndent())
 }
