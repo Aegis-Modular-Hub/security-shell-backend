@@ -5,6 +5,7 @@ import com.aegis_modular_hub.appAuth.domain.mapper.PersonMapper
 import com.aegis_modular_hub.appAuth.domain.service.Interfaces.PersonService
 import com.aegis_modular_hub.appAuth.presentation.request.dto.PersonDto
 import com.aegis_modular_hub.appAuth.presentation.response.pojo.PersonPojo
+import com.aegis_modular_hub.common.Messages
 import com.aegis_modular_hub.common.exception.ConflictException
 import com.aegis_modular_hub.common.exception.ResourceNotFoundException
 import jakarta.transaction.Transactional
@@ -33,13 +34,13 @@ class PersonServiceImpl(
         val existing = findPersonById(id)
 
         if (existing.email != dto.email && personRepository.existsByEmail(dto.email)) {
-            throw ConflictException("A person with email '${dto.email}' already exists")
+            throw ConflictException(Messages.get("error.person.email_exists", dto.email))
         }
 
         if (existing.identification != dto.identification &&
             personRepository.existsByIdentification(dto.identification)
         ) {
-            throw ConflictException("A person with identification '${dto.identification}' already exists")
+            throw ConflictException(Messages.get("error.person.id_exists", dto.identification))
         }
 
         personMapper.updateEntity(existing, dto)
@@ -49,22 +50,31 @@ class PersonServiceImpl(
 
     override fun delete(id: Long) {
         if (personRepository.isPersonAssignedToUser(id)) {
-            throw ConflictException("Person is assigned to a user and cannot be deleted")
+            throw ConflictException(Messages.get("error.person.assigned"))
         }
+
+        if (!personRepository.existsById(id)) {
+            throw ResourceNotFoundException(
+                Messages.get("error.delete.not_found", Messages.get("person.name"), id)
+            )
+        }
+
         personRepository.deleteById(id)
     }
 
     private fun findPersonById(id: Long) =
         personRepository.findById(id)
-            .orElseThrow { ResourceNotFoundException("Person not found with id: $id") }
+            .orElseThrow {
+                ResourceNotFoundException(Messages.get("error.person.not_found", id))
+            }
 
     private fun validateUniqueness(email: String, identification: String) {
         if (personRepository.existsByEmail(email)) {
-            throw ConflictException("A person with email '$email' already exists")
+            throw ConflictException(Messages.get("error.person.email_exists", email))
         }
 
         if (personRepository.existsByIdentification(identification)) {
-            throw ConflictException("A person with identification '$identification' already exists")
+            throw ConflictException(Messages.get("error.person.id_exists", identification))
         }
     }
 }

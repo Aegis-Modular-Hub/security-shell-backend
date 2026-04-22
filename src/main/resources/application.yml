@@ -13,3 +13,7 @@ spring:
                 default_schema: public
                 javax.persistence.schema-generation.create-source: metadata
                 scripts.action: create
+    messages:
+        basename: messages
+        encoding: UTF-8
+        fallback-to-system-locale: true
