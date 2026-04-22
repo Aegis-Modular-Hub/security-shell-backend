@@ -15,7 +15,7 @@ fun main(args: Array<String>) {
     println("""
         ----------------------------------------------------------
         ✅ ¡Aegis Hub se ha iniciado correctamente!
-        
+
         📌 Swagger UI:   $host:$port/swagger-ui.html
         ----------------------------------------------------------
     """.trimIndent())
