@@ -4,18 +4,18 @@ import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.Size
 
 data class PermissionDto(
-    @field:NotBlank(message = "Name is required")
-    @field:Size(max = 100)
+    @field:NotBlank(message = "{permission.name.notBlank}")
+    @field:Size(max = 100, message = "{permission.name.size}")
     val name: String,
 
-    @field:Size(max = 255)
+    @field:Size(max = 255, message = "{permission.description.size}")
     val description: String?,
 
-    @field:NotBlank(message = "HTTP method is required")
-    @field:Size(max = 10)
+    @field:NotBlank(message = "{permission.httpMethod.notBlank}")
+    @field:Size(max = 10, message = "{permission.httpMethod.size}")
     val httpMethod: String,
 
-    @field:NotBlank(message = "Endpoint pattern is required")
-    @field:Size(max = 255)
+    @field:NotBlank(message = "{permission.endpointPattern.notBlank}")
+    @field:Size(max = 255, message = "{permission.endpointPattern.size}")
     val endpointPattern: String
 )

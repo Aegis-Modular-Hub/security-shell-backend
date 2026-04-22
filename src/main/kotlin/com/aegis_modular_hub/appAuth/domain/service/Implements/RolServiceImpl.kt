@@ -7,6 +7,7 @@ import com.aegis_modular_hub.appAuth.domain.mapper.RoleMapper
 import com.aegis_modular_hub.appAuth.domain.service.Interfaces.RolService
 import com.aegis_modular_hub.appAuth.presentation.request.dto.RolDto
 import com.aegis_modular_hub.appAuth.presentation.response.pojo.RolPojo
+import com.aegis_modular_hub.common.Messages
 import com.aegis_modular_hub.common.exception.ConflictException
 import com.aegis_modular_hub.common.exception.ResourceNotFoundException
 import jakarta.transaction.Transactional
@@ -27,11 +28,10 @@ class RolServiceImpl(
         rolMapper.toPojo(findRoleById(id))
 
     override fun create(dto: RolDto): RolPojo {
-
         val name = dto.name.trim().uppercase()
 
         if (rolRepository.existsByName(name)) {
-            throw ConflictException("A role with name '$name' already exists")
+            throw ConflictException(Messages.get("error.role.name_exists", name))
         }
 
         val permissions = resolvePermissions(dto.permissionIds)
@@ -45,12 +45,11 @@ class RolServiceImpl(
     }
 
     override fun update(id: Long, dto: RolDto): RolPojo {
-
         val existing = findRoleById(id)
         val name = dto.name.trim().uppercase()
 
         if (existing.name != name && rolRepository.existsByName(name)) {
-            throw ConflictException("A role with name '$name' already exists")
+            throw ConflictException(Messages.get("error.role.name_exists", name))
         }
 
         rolMapper.updateEntity(existing, dto)
@@ -65,14 +64,23 @@ class RolServiceImpl(
 
     override fun delete(id: Long) {
         if (rolRepository.isRoleAssignedToUsers(id)) {
-            throw ConflictException("Role is assigned to users and cannot be deleted")
+            throw ConflictException(Messages.get("error.role.assigned"))
         }
+
+        if (!rolRepository.existsById(id)) {
+            throw ResourceNotFoundException(
+                Messages.get("error.delete.not_found", Messages.get("role.name"), id)
+            )
+        }
+
         rolRepository.deleteById(id)
     }
 
     private fun findRoleById(id: Long) =
         rolRepository.findById(id)
-            .orElseThrow { ResourceNotFoundException("Role not found with id: $id") }
+            .orElseThrow {
+                ResourceNotFoundException(Messages.get("error.role.not_found", id))
+            }
 
     private fun resolvePermissions(permissionIds: Set<Long>): Set<Permission> {
         if (permissionIds.isEmpty()) return emptySet()
@@ -82,7 +90,7 @@ class RolServiceImpl(
         val missingIds = permissionIds - foundIds
 
         if (missingIds.isNotEmpty()) {
-            throw ResourceNotFoundException("Permissions not found for ids: $missingIds")
+            throw ResourceNotFoundException(Messages.get("error.role.permissions_not_found", missingIds))
         }
 
         return permissions

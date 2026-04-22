@@ -9,6 +9,7 @@ import com.aegis_modular_hub.appAuth.domain.mapper.UserMapper
 import com.aegis_modular_hub.appAuth.domain.service.Interfaces.UserService
 import com.aegis_modular_hub.appAuth.presentation.request.dto.UserDto
 import com.aegis_modular_hub.appAuth.presentation.response.pojo.UserPojo
+import com.aegis_modular_hub.common.Messages
 import com.aegis_modular_hub.common.exception.ConflictException
 import com.aegis_modular_hub.common.exception.ResourceNotFoundException
 import jakarta.transaction.Transactional
@@ -32,19 +33,20 @@ class UserServiceImpl(
         userMapper.toPojo(findUserById(id))
 
     override fun create(dto: UserDto): UserPojo {
-
         val username = dto.username.trim().lowercase()
 
         if (userRepository.existsByUsername(username)) {
-            throw ConflictException("A user with username '$username' already exists")
+            throw ConflictException(Messages.get("error.user.username_exists", username))
         }
 
-        val person = dto.personId?.let {
-            val found = personRepository.findById(it)
-                .orElseThrow { ResourceNotFoundException("Person not found with id: $it") }
+        val person = dto.personId?.let { id ->
+            val found = personRepository.findById(id)
+                .orElseThrow {
+                    ResourceNotFoundException(Messages.get("error.person.not_found", id))
+                }
 
-            if (userRepository.existsByPersonId(it)) {
-                throw ConflictException("The selected person already has an associated user")
+            if (userRepository.existsByPersonId(id)) {
+                throw ConflictException(Messages.get("error.user.person_already_has_user"))
             }
 
             found
@@ -62,20 +64,21 @@ class UserServiceImpl(
     }
 
     override fun update(id: Long, dto: UserDto): UserPojo {
-
         val existing = findUserById(id)
         val username = dto.username.trim().lowercase()
 
         if (existing.username != username && userRepository.existsByUsername(username)) {
-            throw ConflictException("A user with username '$username' already exists")
+            throw ConflictException(Messages.get("error.user.username_exists", username))
         }
 
-        val person = dto.personId?.let {
-            val found = personRepository.findById(it)
-                .orElseThrow { ResourceNotFoundException("Person not found with id: $it") }
+        val person = dto.personId?.let { id ->
+            val found = personRepository.findById(id)
+                .orElseThrow {
+                    ResourceNotFoundException(Messages.get("error.person.not_found", id))
+                }
 
-            if (existing.person?.id != it && userRepository.existsByPersonId(it)) {
-                throw ConflictException("The selected person already has an associated user")
+            if (existing.person?.id != id && userRepository.existsByPersonId(id)) {
+                throw ConflictException(Messages.get("error.user.person_already_has_user"))
             }
 
             found
@@ -96,13 +99,19 @@ class UserServiceImpl(
     }
 
     override fun delete(id: Long) {
-        val user = findUserById(id)
-        userRepository.delete(user)
+        if (!userRepository.existsById(id)) {
+            throw ResourceNotFoundException(
+                Messages.get("error.delete.not_found", Messages.get("user.name"), id)
+            )
+        }
+        userRepository.deleteById(id)
     }
 
     private fun findUserById(id: Long) =
         userRepository.findById(id)
-            .orElseThrow { ResourceNotFoundException("User not found with id: $id") }
+            .orElseThrow {
+                ResourceNotFoundException(Messages.get("error.user.not_found", id))
+            }
 
     private fun resolveRoles(roleIds: Set<Long>): Set<Rol> {
         if (roleIds.isEmpty()) return emptySet()
@@ -112,7 +121,7 @@ class UserServiceImpl(
         val missingIds = roleIds - foundIds
 
         if (missingIds.isNotEmpty()) {
-            throw ResourceNotFoundException("Roles not found for ids: $missingIds")
+            throw ResourceNotFoundException(Messages.get("error.user.roles_not_found", missingIds))
         }
 
         return roles
